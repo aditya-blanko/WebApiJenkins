@@ -2,11 +2,13 @@ pipeline {
     agent any
     environment {
         AZURE_CREDENTIALS = credentials('azure-service-principal')
+        RESOURCE_GROUP = 'rg-04082003'
+        APP_SERVICE_NAME = 'my-app-040814'
     }
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/aditya-blanko/WebApiJenkins.git'
+                git branch: 'master', url: 'https://github.com/aditya-blanko/WebApiJenkins.git'
             }
         }
         stage('Build') {
