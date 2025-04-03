@@ -1,38 +1,43 @@
 pipeline {
     agent any
     environment {
-        AZURE_CREDENTIALS = credentials('azure-service-principal')
+        AZURE_CREDENTIALS_ID = 'azure-service-principal'
         RESOURCE_GROUP = 'rg-04082003'
-        APP_SERVICE_NAME = 'my-app-040814'
+        APP_SERVICE_NAME = 'webapijenkins-04082003'
     }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'master', url: 'https://github.com/aditya-blanko/WebApiJenkins.git'
             }
         }
+
         stage('Build') {
             steps {
-                script {
-                    bat 'dotnet restore'
-                    bat 'dotnet build --configuration Release'
+                bat 'dotnet restore'
+                bat 'dotnet build --configuration Release'
+                bat 'dotnet publish -c Release -o ./publish'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat "az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID"
+                    bat "powershell Compress-Archive -Path ./publish/* -DestinationPath ./publish.zip -Force"
+                    bat "az webapp deploy --resource-group $RESOURCE_GROUP --name $APP_SERVICE_NAME --src-path ./publish.zip --type zip"
                 }
             }
         }
-        stage('Publish') {
-            steps {
-                bat 'dotnet publish -c Release -o publish/'
-            }
+    }
+
+    post {
+        success {
+            echo 'Deployment Successful!'
         }
-        stage('Deploy to Azure') {
-            steps {
-                withCredentials([azureServicePrincipal('azure-service-principal')]) {
-                    bat 'az login --service-principal -u $AZURE_CREDENTIALS_USR -p $AZURE_CREDENTIALS_PSW --tenant $AZURE_CREDENTIALS_TEN'
-                    bat 'az group create --name myResourceGroup --location eastus'
-                    bat 'az webapp create --name myAppService --resource-group myResourceGroup --plan myAppPlan --runtime "DOTNETCORE:8.0"'
-                    bat 'az webapp deploy --name myAppService --resource-group myResourceGroup --src-path publish/'
-                }
-            }
+        failure {
+            echo 'Deployment Failed!'
         }
     }
 }
