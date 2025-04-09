@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        AZURE_CREDENTIALS_ID = 'azure-service-principal'
+        AZURE_CREDENTIALS_ID = 'azure-service-principal-dotnet'
         RESOURCE_GROUP = 'rg-04082003'
         APP_SERVICE_NAME = 'webapijenkins-04082003'
     }
